@@ -1,5 +1,12 @@
 # Changelog
 
+## [v3.0 0]
+### Breaking
+- Dropping API v1
+
+### Deprecated
+- API v1.1 will be removed with NC23-EOS
+
 ## [v2.4.0](https://github.com/nextcloud/forms/tree/v2.4.0) (2021-11-10)
 
 [Full Changelog](https://github.com/nextcloud/forms/compare/v2.3.0...v2.4.0)

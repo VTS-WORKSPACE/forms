@@ -211,11 +211,13 @@ class ApiController extends OCSController {
 	 *
 	 * Read all information to edit a Form (form, questions, options, except submissions/answers).
 	 *
+	 * @param int $id FormId
+	 * @param string $apiVersion
 	 * @return DataResponse
 	 * @throws OCSBadRequestException
 	 * @throws OCSForbiddenException
 	 */
-	public function getForm(int $id): DataResponse {
+	public function getForm(int $id, string $apiVersion): DataResponse {
 		try {
 			$form = $this->formsService->getForm($id);
 		} catch (IMapperException $e) {
@@ -230,8 +232,10 @@ class ApiController extends OCSController {
 
 		// TODO remove after removal of API v1.1
 		// Backward compatibility for mandatory
-		foreach ($form['questions'] as $index => $question) {
-			$form['questions'][$index]['mandatory'] = $question['isRequired'];
+		if($apiVersion === 'v1.1') {
+			foreach ($form['questions'] as $index => $question) {
+				$form['questions'][$index]['mandatory'] = $question['isRequired'];
+			}
 		}
 
 		return new DataResponse($form);
@@ -242,11 +246,12 @@ class ApiController extends OCSController {
 	 *
 	 * Create a new Form and return the Form to edit.
 	 *
+	 * @param string $apiVersion
 	 * @return DataResponse
 	 * @throws OCSBadRequestException
 	 * @throws OCSForbiddenException
 	 */
-	public function newForm(): DataResponse {
+	public function newForm(string $apiVersion): DataResponse {
 		$form = new Form();
 
 		$form->setOwnerId($this->currentUser->getUID());
@@ -266,12 +271,8 @@ class ApiController extends OCSController {
 
 		$this->formMapper->insert($form);
 
-		// Return like getForm(), just without loading Questions (as there are none).
-		$result = $form->read();
-		$result['questions'] = [];
-		$result['shares'] = [];
-
-		return new DataResponse($result);
+		// Return like getForm()
+		return $this->getForm($form->getId(), $apiVersion);
 	}
 
 	/**
@@ -434,11 +435,12 @@ class ApiController extends OCSController {
 	 * @param int $formId the form id
 	 * @param string $type the new question type
 	 * @param string $text the new question title
+	 * @param string $apiVersion
 	 * @return DataResponse
 	 * @throws OCSBadRequestException
 	 * @throws OCSForbiddenException
 	 */
-	public function newQuestion(int $formId, string $type, string $text = ''): DataResponse {
+	public function newQuestion(int $formId, string $type, string $text = '', string $apiVersion): DataResponse {
 		$this->logger->debug('Adding new question: formId: {formId}, type: {type}, text: {text}', [
 			'formId' => $formId,
 			'type' => $type,
@@ -486,7 +488,9 @@ class ApiController extends OCSController {
 
 		// TODO remove after removal of API v1.1
 		// Backward compatibility for mandatory
-		$response['mandatory'] = $response['isRequired'];
+		if($apiVersion === 'v1.1') {
+			$response['mandatory'] = $response['isRequired'];
+		}
 
 		return new DataResponse($response);
 	}
@@ -591,11 +595,12 @@ class ApiController extends OCSController {
 	 *
 	 * @param int $id QuestionId of question to update
 	 * @param array $keyValuePairs Array of key=>value pairs to update.
+	 * @param string $apiVersion
 	 * @return DataResponse
 	 * @throws OCSBadRequestException
 	 * @throws OCSForbiddenException
 	 */
-	public function updateQuestion(int $id, array $keyValuePairs): DataResponse {
+	public function updateQuestion(int $id, array $keyValuePairs, string $apiVersion): DataResponse {
 		$this->logger->debug('Updating question: questionId: {id}, values: {keyValuePairs}', [
 			'id' => $id,
 			'keyValuePairs' => $keyValuePairs
@@ -634,7 +639,7 @@ class ApiController extends OCSController {
 
 		// TODO remove after removal of API v1.1
 		// Rename deprecated mandatory key to isRequired
-		if (key_exists('mandatory', $keyValuePairs)) {
+		if ($apiVersion === 'v1.1' && key_exists('mandatory', $keyValuePairs)) {
 			$this->logger->info('Key \'mandatory\' is deprecated, please use \'isRequired\'.');
 			$keyValuePairs['isRequired'] = $keyValuePairs['mandatory'];
 			unset($keyValuePairs['mandatory']);
@@ -857,11 +862,12 @@ class ApiController extends OCSController {
 	 * Get all the submissions of a given form
 	 *
 	 * @param string $hash the form hash
+	 * @param string $apiVersion
 	 * @return DataResponse
 	 * @throws OCSBadRequestException
 	 * @throws OCSForbiddenException
 	 */
-	public function getSubmissions(string $hash): DataResponse {
+	public function getSubmissions(string $hash, string $apiVersion): DataResponse {
 		try {
 			$form = $this->formMapper->findByHash($hash);
 		} catch (IMapperException $e) {
@@ -911,8 +917,10 @@ class ApiController extends OCSController {
 
 		// TODO remove after removal of API v1.1
 		// Backward compatibility for mandatory
-		foreach ($questions as $index => $question) {
-			$questions[$index]['mandatory'] = $question['isRequired'];
+		if($apiVersion === 'v1.1') {
+			foreach ($questions as $index => $question) {
+				$questions[$index]['mandatory'] = $question['isRequired'];
+			}
 		}
 		
 		$response = [
