@@ -33,3 +33,4 @@ v8-compile-cache-0/
 # phpunit results
 .phpunit.result.cache
 clover.unit.xml
+clover.integration.xml

@@ -149,6 +149,7 @@ class ApiController extends OCSController {
 	 * @return DataResponse
 	 */
 	public function getForms(): DataResponse {
+		$this->logger->error('GET THEM');
 		$forms = $this->formMapper->findAllByOwnerId($this->currentUser->getUID());
 
 		$result = [];
@@ -156,6 +157,7 @@ class ApiController extends OCSController {
 			$result[] = $this->formsService->getPartialFormArray($form->getId());
 		}
 
+		$this->logger->error(json_encode($result));
 		return new DataResponse($result);
 	}
 
