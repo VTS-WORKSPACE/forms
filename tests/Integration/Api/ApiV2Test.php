@@ -198,4 +198,57 @@ class ApiV2Test extends TestCase {
 		$this->assertEquals(200, $resp->getStatusCode());
 		$this->assertEquals($expected, $data);
 	}
+
+	public function dataGetNewForm() {
+		return [
+			'getNewForm' => [
+				'expected' => [
+					// 'hash' => Some random, cannot be checked.
+					'title' => '',
+					'description' => '',
+					'ownerId' => 'test',
+					// 'created' => Hard to check exactly.
+					'access' => [
+						'permitAllUsers' => false,
+						'showToAllUsers' => false
+					],
+					'expires' => 0,
+					'isAnonymous' => false,
+					'submitOnce' => true,
+					'canSubmit' => true,
+					'permissions' => [
+						'edit',
+						'results',
+						'submit'
+					],
+					'questions' => [],
+					'shares' => [],
+				]
+			]
+		];
+	}
+	/**
+	 * @dataProvider dataGetNewForm
+	 * 
+	 * @param array $expected
+	 */
+	public function testGetNewForm(array $expected): void {
+		$resp = $this->http->request('POST', 'api/v2/form');
+		$data = $this->OcsResponse2Data($resp);
+
+		// Store for deletion on tearDown
+		$this->testForms[] = $data;
+
+		// Cannot control id
+		unset($data['id']);
+		// Check general behaviour of hash
+		$this->assertMatchesRegularExpression('/^[a-zA-Z0-9]{16}$/', $data['hash']);
+		unset($data['hash']);
+		// Check general behaviour of created (Created in the last 10 seconds)
+		$this->assertTrue(time() - $data['created'] < 10);
+		unset($data['created']);
+
+		$this->assertEquals(200, $resp->getStatusCode());
+		$this->assertEquals($expected, $data);
+	}
 };
