@@ -251,4 +251,48 @@ class ApiV2Test extends TestCase {
 		$this->assertEquals(200, $resp->getStatusCode());
 		$this->assertEquals($expected, $data);
 	}
+
+	public function dataGetFullForm() {
+		return [
+			'getFullForm' => [
+				'expected' => [
+					'hash' => 'abcdefg',
+					'title' => 'Title of a Form',
+					'description' => 'Just a simple form.',
+					'ownerId' => 'test',
+					'created' => 12345,
+					'access' => [
+						'permitAllUsers' => false,
+						'showToAllUsers' => false
+					],
+					'expires' => 0,
+					'isAnonymous' => false,
+					'submitOnce' => true,
+					'canSubmit' => true,
+					'permissions' => [
+						'edit',
+						'results',
+						'submit'
+					],
+					'questions' => [],
+					'shares' => [],
+				]
+			]
+		];
+	}
+	/**
+	 * @dataProvider dataGetFullForm
+	 * 
+	 * @param array $expected
+	 */
+	public function testGetFullForm(array $expected): void {
+		$resp = $this->http->request('GET', "api/v2/form/{$this->testForms[0]['id']}");
+		$data = $this->OcsResponse2Data($resp);
+
+		// Cannot control id
+		unset($data['id']);
+
+		$this->assertEquals(200, $resp->getStatusCode());
+		$this->assertEquals($expected, $data);
+	}
 };
