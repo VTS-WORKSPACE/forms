@@ -53,7 +53,43 @@ class ApiV2Test extends TestCase {
 			'created' => 12345,
 			'expires' => 0,
 			'is_anonymous' => false,
-			'submit_once' => true
+			'submit_once' => true,
+			'questions' => [
+				[
+					'type' => 'short',
+					'text' => 'First Question?',
+					'isRequired' => true,
+					'order' => 1,
+					'options' => []
+				],
+				[
+					'type' => 'multiple_unique',
+					'text' => 'Second Question?',
+					'isRequired' => false,
+					'order' => 2,
+					'options' => [
+						[
+							'text' => 'Option 1'
+						],
+						[
+							'text' => 'Option 2'
+						]
+					]
+				]
+			],
+			'shares' => [
+				[
+					'shareType' => 0,
+					'shareWith' => 'user1',
+				],
+				[
+					'shareType' => 3,
+					'shareWith' => 'shareHash',
+				],
+			],
+			'submissions' => [
+
+			]
 		],
 		[
 			'hash' => 'abcdefghij',
@@ -67,7 +103,23 @@ class ApiV2Test extends TestCase {
 			'created' => 12345,
 			'expires' => 0,
 			'is_anonymous' => false,
-			'submit_once' => true
+			'submit_once' => true,
+			'questions' => [
+				[
+					'type' => 'short',
+					'text' => 'Third Question?',
+					'isRequired' => false,
+					'order' => 1,
+					'options' => []
+				],
+			],
+			'shares' => [
+				[
+					'shareType' => 0,
+					'shareWith' => 'user2',
+				],
+			],
+			'submissions' => []
 		]
 	];
 
@@ -95,8 +147,44 @@ class ApiV2Test extends TestCase {
 					'submit_once' => $qb->createNamedParameter($form['submit_once'], IQueryBuilder::PARAM_BOOL)
 				]);
 			$qb->execute();
+			$formId = $qb->getLastInsertId();
+			$this->testForms[$index]['id'] = $formId;
 
-			$this->testForms[$index]['id'] = $qb->getLastInsertId();
+			foreach ($form['questions'] as $qIndex => $question) {
+				$qb->insert('forms_v2_questions')
+					->values([
+						'form_id' => $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT),
+						'order' => $qb->createNamedParameter($question['order'], IQueryBuilder::PARAM_INT),
+						'type' => $qb->createNamedParameter($question['type'], IQueryBuilder::PARAM_STR),
+						'is_required' => $qb->createNamedParameter($question['isRequired'], IQueryBuilder::PARAM_BOOL),
+						'text' => $qb->createNamedParameter($question['text'], IQueryBuilder::PARAM_STR)
+					]);
+				$qb->execute();
+				$questionId = $qb->getLastInsertId();
+				$this->testForms[$index]['questions'][$qIndex]['id'] = $questionId;
+
+				foreach($question['options'] as $oIndex => $option) {
+					$qb->insert('forms_v2_options')
+						->values([
+							'question_id' => $qb->createNamedParameter($questionId, IQueryBuilder::PARAM_INT),
+							'text' => $qb->createNamedParameter($option['text'], IQueryBuilder::PARAM_STR)
+						]);
+					$qb->execute();
+					$this->testForms[$index]['questions'][$qIndex]['options'][$oIndex]['id'] = $qb->getLastInsertId();
+				}
+			}
+
+			foreach($form['shares'] as $sIndex => $share) {
+				$qb->insert('forms_v2_shares')
+					->values([
+						'form_id' => $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT),
+						'share_type' => $qb->createNamedParameter($share['shareType'], IQueryBuilder::PARAM_STR),
+						'share_with' => $qb->createNamedParameter($share['shareWith'], IQueryBuilder::PARAM_STR)
+					]);
+				$qb->execute();
+				$questionId =
+				$this->testForms[$index]['shares'][$sIndex]['id'] = $qb->getLastInsertId();
+			}
 		}
 
 		// Set up http Client
@@ -118,6 +206,24 @@ class ApiV2Test extends TestCase {
 			$qb->delete('forms_v2_forms')
 				->where($qb->expr()->eq('id', $qb->createNamedParameter($form['id'], IQueryBuilder::PARAM_INT)));
 			$qb->execute();
+
+			foreach($form['questions'] as $question) {
+				$qb->delete('forms_v2_questions')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($question['id'], IQueryBuilder::PARAM_INT)));
+				$qb->execute();
+
+				foreach($question['options'] as $option) {
+					$qb->delete('forms_v2_options')
+						->where($qb->expr()->eq('id', $qb->createNamedParameter($option['id'], IQueryBuilder::PARAM_INT)));
+					$qb->execute();
+				}
+			}
+
+			foreach ($form['shares'] as $share) {
+				$qb->delete('forms_v2_shares')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($share['id'], IQueryBuilder::PARAM_INT)));
+				$qb->execute();
+			}
 		}
 
 		parent::tearDown();
@@ -274,8 +380,41 @@ class ApiV2Test extends TestCase {
 						'results',
 						'submit'
 					],
-					'questions' => [],
-					'shares' => [],
+					'questions' => [
+						[
+							'type' => 'short',
+							'text' => 'First Question?',
+							'isRequired' => true,
+							'order' => 1,
+							'options' => []
+						],
+						[
+							'type' => 'multiple_unique',
+							'text' => 'Second Question?',
+							'isRequired' => false,
+							'order' => 2,
+							'options' => [
+								[
+									'text' => 'Option 1'
+								],
+								[
+									'text' => 'Option 2'
+								]
+							]
+						]
+					],
+					'shares' => [
+						[
+							'shareType' => 0,
+							'shareWith' => 'user1',
+							'displayName' => ''
+						],
+						[
+							'shareType' => 3,
+							'shareWith' => 'shareHash',
+							'displayName' => ''
+						],
+					],
 				]
 			]
 		];
@@ -289,7 +428,23 @@ class ApiV2Test extends TestCase {
 		$resp = $this->http->request('GET', "api/v2/form/{$this->testForms[0]['id']}");
 		$data = $this->OcsResponse2Data($resp);
 
-		// Cannot control id
+		// Cannot control ids, but check general consistency.
+		foreach ($data['questions'] as $qIndex => $question) {
+			$this->assertEquals($data['id'], $question['formId']);
+			unset($data['questions'][$qIndex]['formId']);
+
+			foreach ($question['options'] as $oIndex => $option) {
+				$this->assertEquals($question['id'], $option['questionId']);
+				unset($data['questions'][$qIndex]['options'][$oIndex]['questionId']);
+				unset($data['questions'][$qIndex]['options'][$oIndex]['id']);
+			}
+			unset($data['questions'][$qIndex]['id']);
+		}
+		foreach ($data['shares'] as $sIndex => $share) {
+			$this->assertEquals($data['id'], $share['formId']);
+			unset($data['shares'][$sIndex]['formId']);
+			unset($data['shares'][$sIndex]['id']);
+		}
 		unset($data['id']);
 
 		$this->assertEquals(200, $resp->getStatusCode());
