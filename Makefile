@@ -6,7 +6,7 @@ build_dir=$(CURDIR)/build/artifacts
 appstore_package_name=$(build_dir)/$(app_name)
 source_dir=$(build_dir)/source
 
-all: clean install-composer-deps install-npm-deps-dev build-js-production appstore
+all: clean install-composer-deps install-npm-deps-dev build-js-production release
 
 clean:
 	rm -rf $(build_dir)
@@ -26,7 +26,7 @@ install-npm-deps:
 	npm install --production
 
 install-npm-deps-dev:
-	npm install
+	npm ci
 
 optimize-js: install-npm-deps-dev
 	npm run build
@@ -57,3 +57,7 @@ appstore:
 	$(project_dir)/templates \
 	$(project_dir)/vendor \
 	$(project_dir)/CHANGELOG.md
+
+
+release:
+	zip -r release.zip . -x "node_modules/*" "tests/*" ".github/*" ".git/*"
