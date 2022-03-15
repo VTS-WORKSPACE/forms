@@ -23,6 +23,7 @@ cypress/snapshots
 
 # Compiled files
 js/
+release.zip
 
 # Compile-Cache
 v8-compile-cache-0/
